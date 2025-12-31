@@ -1,0 +1,72 @@
+WCE_UI_BEGIN
+    WCE_CONTAINER_BEGIN
+        WCE_ROW_BEGIN
+            WCE_COL_BEGIN(12)
+                WCE_H1("WebCee Dashboard")
+                WCE_ALERT("System is running normally", "success")
+                WCE_HR
+            WCE_COL_END
+        WCE_ROW_END
+
+        WCE_ROW_BEGIN
+            WCE_COL_BEGIN(6)
+                WCE_CARD_BEGIN("System Status")
+                    WCE_H3("Resources")
+                    WCE_TEXT("CPU Usage")
+                    WCE_PROGRESS("sys_cpu_width", "bg-primary")
+                    WCE_BR
+                    WCE_TEXT("Memory Usage")
+                    WCE_PROGRESS("sys_mem_width", "bg-warning")
+                    
+                    WCE_HR
+                    
+                    WCE_ROW_BEGIN
+                        WCE_COL_BEGIN(6)
+                            WCE_H2("Uptime")
+                            WCE_LABEL("sys_uptime")
+                            WCE_BADGE("Seconds", "info")
+                        WCE_COL_END
+                        WCE_COL_BEGIN(6)
+                            WCE_H2("Load")
+                            WCE_LABEL("sys_load")
+                        WCE_COL_END
+                    WCE_ROW_END
+                WCE_CARD_END
+            WCE_COL_END
+
+            WCE_COL_BEGIN(6)
+                WCE_CARD_BEGIN("Control Panel")
+                    WCE_INPUT("Hostname", "hostname")
+                    WCE_CHECKBOX("Enable SSH Access", "ssh_enabled")
+                    
+                    WCE_SELECT_BEGIN("Power Mode", "pwr_mode")
+                        WCE_OPTION("Balanced", "0")
+                        WCE_OPTION("Performance", "1")
+                        WCE_OPTION("Power Saver", "2")
+                    WCE_SELECT_END
+                    
+                    WCE_HR
+                    
+                    WCE_BUTTON("Save Settings", save_settings, "btn-success")
+                    WCE_BUTTON("Reboot System", reboot_system, "btn-danger")
+                WCE_CARD_END
+            WCE_COL_END
+        WCE_ROW_END
+    WCE_CONTAINER_END
+WCE_UI_END
+
+WCE_SCRIPT_BEGIN
+    WCE_MODEL("hostname", "WebCee-Device-01");
+    WCE_MODEL("ssh_enabled", "1");
+    WCE_MODEL("pwr_mode", "0");
+
+    WCE_DATA("sys_cpu_width", "0%");
+    WCE_DATA("sys_mem_width", "0%");
+    WCE_DATA("sys_uptime", "0");
+    WCE_DATA("sys_load", "0.00");
+
+    WCE_FUNC("save_settings", save_settings, VOID);
+    WCE_FUNC("reboot_system", reboot_system, VOID);
+    WCE_FUNC("toggle_led1", toggle_led1, VOID);
+    WCE_FUNC("toggle_led2", toggle_led2, VOID);
+WCE_SCRIPT_END

@@ -1,0 +1,32 @@
+# Object files
+*.o
+*.obj
+
+# Libraries
+*.a
+*.so
+*.dll
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.bin
+
+# Build directories
+build/
+build_c/
+generated/
+dist/
+
+# Local scratch / experiments
+scratch/
+
+# Python
+__pycache__/
+*.pyc
+
+# IDEs
+.vscode/
+.idea/
+*.swp

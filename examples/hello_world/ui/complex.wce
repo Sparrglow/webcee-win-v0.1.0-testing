@@ -1,0 +1,118 @@
+WCE_STYLE_BEGIN
+:root { --primary: #2c3e50; --accent: #3498db; --bg: #ecf0f1; }
+body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #333; }
+.dashboard { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; max-width: 1200px; margin: 0 auto; }
+.card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+h2 { margin-top: 0; border-bottom: 2px solid var(--bg); padding-bottom: 10px; color: var(--primary); }
+
+/* Status Bar */
+.status-bar { display: flex; gap: 20px; margin-bottom: 20px; }
+.stat-box { background: var(--primary); color: white; padding: 15px; border-radius: 8px; flex: 1; text-align: center; }
+.stat-val { font-size: 24px; font-weight: bold; }
+
+/* Device List */
+.device-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee; }
+.device-info { display: flex; flex-direction: column; }
+.device-name { font-weight: bold; }
+.device-ip { font-size: 0.8em; color: #7f8c8d; }
+.status-badge { padding: 4px 8px; border-radius: 12px; font-size: 0.8em; }
+.online { background: #d4edda; color: #155724; }
+.offline { background: #f8d7da; color: #721c24; }
+
+/* Logs */
+.log-item { font-family: monospace; font-size: 0.9em; padding: 5px 0; border-bottom: 1px dashed #eee; }
+.log-info { color: #3498db; }
+.log-warn { color: #f39c12; }
+.log-err { color: #e74c3c; }
+
+/* Form */
+input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+button { background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; width: 100%; }
+button:hover { background: #2980b9; }
+WCE_STYLE_END
+
+WCE_HTML_BEGIN
+<div class="status-bar">
+    <div class="stat-box">
+        <div>CPU Load</div>
+        <div class="stat-val"><span wce-bind="sys_cpu">0</span>%</div>
+    </div>
+    <div class="stat-box">
+        <div>Memory</div>
+        <div class="stat-val"><span wce-bind="sys_mem">0</span> MB</div>
+    </div>
+    <div class="stat-box">
+        <div>Uptime</div>
+        <div class="stat-val"><span wce-bind="sys_uptime">0</span> s</div>
+    </div>
+</div>
+
+<div class="dashboard">
+    <!-- Left Column: Devices -->
+    <div class="card">
+        <h2>Connected Devices</h2>
+        <div wce-for="dev in devices">
+            <div class="device-item">
+                <div class="device-info">
+                    <span class="device-name">{{ dev.name }}</span>
+                    <span class="device-ip">{{ dev.ip }}</span>
+                </div>
+                <div>
+                    <!-- Simple conditional styling logic would be in JS for complex cases, 
+                         but here we just show the raw status for demo or use wce-if in future -->
+                    <span class="status-badge">{{ dev.status }}</span>
+                    <button style="width: auto; margin-left: 10px; padding: 5px 10px;" wce-click="restart_device({{ dev.id }})">Restart</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Logs & Settings -->
+    <div>
+        <div class="card" style="margin-bottom: 20px;">
+            <h2>Quick Settings</h2>
+            <label>System Hostname</label>
+            <input type="text" wce-model="hostname" placeholder="Enter hostname...">
+            <button wce-click="save_settings(VOID)">Save Configuration</button>
+        </div>
+
+        <div class="card">
+            <h2>System Logs</h2>
+            <div style="height: 300px; overflow-y: auto;">
+                <div wce-for="log in logs">
+                    <div class="log-item">
+                        <span style="color: #999;">[{{ log.time }}]</span> 
+                        <span>{{ log.msg }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+WCE_HTML_END
+
+WCE_SCRIPT_BEGIN
+// 1. Define Data Structures
+WCE_TYPE_BEGIN(Device)
+    int id;
+    char name[32];
+    char ip[16];
+    char status[16];
+WCE_TYPE_END
+
+WCE_TYPE_BEGIN(LogEntry)
+    char time[16];
+    char msg[64];
+WCE_TYPE_END
+
+// 2. Map Lists
+WCE_DATA_LIST("devices", "sys_devices", "device_count", "Device");
+WCE_DATA_LIST("logs", "sys_logs", "log_count", "LogEntry");
+
+// 3. Map Variables & Models
+WCE_MODEL("hostname", "MyIoTGateway");
+
+// 4. Events
+WCE_FUNC("restart_device", on_restart_device, INT);
+WCE_FUNC("save_settings", on_save_settings, VOID);
+WCE_SCRIPT_END

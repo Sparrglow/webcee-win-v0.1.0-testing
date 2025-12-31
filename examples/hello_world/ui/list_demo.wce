@@ -1,0 +1,58 @@
+WCE_STYLE_BEGIN
+body { font-family: sans-serif; padding: 20px; background: #f0f0f0; }
+.container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+h1 { color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+.article-item { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; border-radius: 4px; }
+.article-item h3 { margin: 0 0 5px 0; color: #007bff; }
+.article-item p { margin: 0; color: #666; }
+.article-meta { font-size: 0.8em; color: #999; margin-top: 5px; }
+.form-group { margin-bottom: 15px; }
+input[type="text"] { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+button { background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
+button:hover { background: #218838; }
+WCE_STYLE_END
+
+WCE_HTML_BEGIN
+<div class="container">
+    <h1>WebCee v0.1 List Demo</h1>
+    
+    <div class="form-group">
+        <label>Search Filter:</label>
+        <input type="text" wce-model="search_query" placeholder="Type to filter...">
+    </div>
+
+    <div wce-for="item in articles">
+        <div class="article-item">
+            <h3>{{ item.title }}</h3>
+            <p>{{ item.summary }}</p>
+            <div class="article-meta">ID: {{ item.id }} | Views: {{ item.views }}</div>
+            <button wce-click="view_article({{ item.id }})">Read More</button>
+        </div>
+    </div>
+
+    <div style="margin-top: 20px; text-align: center;">
+        <button wce-click="add_article(VOID)">Add Random Article</button>
+    </div>
+</div>
+WCE_HTML_END
+
+WCE_SCRIPT_BEGIN
+// Define the C struct layout
+WCE_TYPE_BEGIN(Article)
+    int id;
+    char title[64];
+    char summary[128];
+    int views;
+WCE_TYPE_END
+
+// Map the C array to a JS list
+// WCE_DATA_LIST("name_in_js", "c_array_name", "c_count_variable", "struct_type")
+WCE_DATA_LIST("articles", "my_articles", "article_count", "Article");
+
+// Two-way binding model
+WCE_MODEL("search_query", "");
+
+// Events
+WCE_FUNC("view_article", on_view_article, INT);
+WCE_FUNC("add_article", on_add_article, VOID);
+WCE_SCRIPT_END
