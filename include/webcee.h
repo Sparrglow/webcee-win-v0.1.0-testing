@@ -15,6 +15,10 @@ WEBCEE_API void wce_stop(void);                       // 停止服务
 /* 数据同步 (C -> 前端) */
 WEBCEE_API void wce_data_set(const char* key, const char* val);     // 更新单个数据
 
+/* 函数注册 (C -> 前端) */
+typedef void (*wce_func_t)(void);
+WEBCEE_API void wce_register_function(const char* name, wce_func_t func);
+
 /* 工具函数 */
 WEBCEE_API const char* wce_version(void);             // 获取框架版本
 WEBCEE_API int wce_is_connected(void);                // 检查前端连接状态

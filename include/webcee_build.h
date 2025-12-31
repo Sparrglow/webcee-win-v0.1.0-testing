@@ -132,6 +132,21 @@ extern void _wce_node_set_prop(WceNode* node, const char* label, const char* val
 #define wce_progress(label, var_ptr)         _WCE_LEAF_PROGRESS(label, var_ptr)
 #define wce_input(label, key)                _WCE_LEAF_INPUT(label, key)
 
+// --- 运行时构建 API (Manual Mode) ---
+#define wce_ui_begin() \
+    do { \
+        WceNode* _root = _wce_node_create(WCE_NODE_ROOT); \
+        _wce_push_context(_root); \
+    } while(0)
+
+#define wce_ui_end() \
+    do { \
+        _wce_pop_context(); \
+    } while(0)
+
+#define WCE_MODEL(key, val) wce_data_set(key, val)
+#define WCE_FUNC(name, func) wce_register_function(name, func)
+
 // --- 兼容层：旧宏映射到新函数（保持向后兼容） ---
 // 注意：这里利用了宏展开的特性，将 BEGIN 展开为函数调用的前半部分
 #define WCE_ROW_BEGIN         wce_row({

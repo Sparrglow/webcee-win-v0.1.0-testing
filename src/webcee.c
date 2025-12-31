@@ -64,6 +64,31 @@
 	}
 #endif
 
+// --- Dynamic Function Registry ---
+typedef struct {
+    char* name;
+    wce_func_t func;
+} wce_func_entry_t;
+
+static wce_func_entry_t func_registry[256];
+static int func_count = 0;
+
+static char* wce_strdup(const char* s) {
+    if (!s) return NULL;
+    size_t len = strlen(s) + 1;
+    char* new_s = (char*)malloc(len);
+    if (new_s) memcpy(new_s, s, len);
+    return new_s;
+}
+
+void wce_register_function(const char* name, wce_func_t func) {
+    if (func_count < 256) {
+        func_registry[func_count].name = wce_strdup(name);
+        func_registry[func_count].func = func;
+        func_count++;
+    }
+}
+
 // --- Generated Hooks (optional) ---
 // If generated code exists and is linked, it will provide these.
 // For include-only / no-.wce usage, we provide safe internal stubs.
@@ -109,7 +134,16 @@
     #if defined(__GNUC__) || defined(__clang__)
     __attribute__((weak))
     #endif
-	void wce_dispatch_event(const char* event, const char* args) { (void)event; (void)args; }
+	void wce_dispatch_event(const char* event, const char* args) {
+        (void)args;
+        // Check dynamic registry first
+        for (int i = 0; i < func_count; i++) {
+            if (strcmp(func_registry[i].name, event) == 0) {
+                if (func_registry[i].func) func_registry[i].func();
+                return;
+            }
+        }
+    }
 #endif
 
 // --- Data Structures ---
