@@ -128,7 +128,6 @@ Token lexer_next_token(Lexer* l) {
     }
 
     // 5. 解析符号
-    int start = l->position;
     advance(l); // Consume first char
     token.length = 1;
 

@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define SERVER_PORT 8080
+
 #ifdef _WIN32
 #include <windows.h>
 #define sleep_ms(x) Sleep(x)
@@ -61,7 +63,7 @@ int main() {
     printf("Starting WebCee Showcase...\n");
     
     // Initialize WebCee
-    if (wce_init(8080) != 0) {
+    if (wce_init(SERVER_PORT) != 0) {
         printf("Failed to init WebCee\n");
         return 1;
     }
@@ -82,7 +84,7 @@ int main() {
     wce_ui_main();
     
     // Start server
-    printf("Server running at http://localhost:8080\n");
+    printf("Server running at http://localhost:%d\n", SERVER_PORT);
     if (wce_start() != 0) {
         printf("Failed to start server\n");
         return 1;

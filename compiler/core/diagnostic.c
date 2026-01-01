@@ -78,8 +78,6 @@ void diagnostic_print_all(const DiagnosticBag* bag) {
     for (int i = 0; i < bag->count; i++) {
         Diagnostic* d = &bag->items[i];
         const char* level_str = "INFO";
-        const char* color_code = "";
-        const char* reset_code = "";
 
         // 简单的 ANSI 颜色（如果在支持的终端）
         // Windows CMD 可能默认不支持，这里暂时仅用文本区分
