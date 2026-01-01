@@ -173,22 +173,120 @@ static wce_kv_t kv_store[MAX_KV_STORE];
 static int kv_count = 0;
 
 // Minimal embedded UI (served when no web_root found)
-static const char* WCE_EMBEDDED_INDEX_HTML =
+// Modified to support Runtime Rendering (SSR from C structure)
+static const char* WCE_HTML_HEADER =
 	"<!DOCTYPE html><html><head><meta charset='UTF-8'>"
 	"<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
-	"<title>WebCee</title>"
-	"<style>body{font-family:system-ui,Segoe UI,Arial;margin:24px;}"
-	"pre{background:#f6f8fa;padding:12px;border-radius:8px;overflow:auto;}"
-	"</style></head><body>"
-	"<h2>WebCee is running</h2>"
-	"<p>Open this page to see live data from <code>/api/data</code>.</p>"
-	"<pre id='out'>{}</pre>"
-	"<script>async function tick(){try{const r=await fetch('/api/data');"
-	"document.getElementById('out').textContent=await r.text();}catch(e){}}"
-	"tick(); setInterval(tick,1000);</script>"
-	"</body></html>";
+	"<title>WebCee App</title>"
+	"<style>"
+	"body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;margin:0;padding:20px;background:#f0f2f5;}"
+	".container{max_width:800px;margin:0 auto;}"
+	".row{display:flex;flex-wrap:wrap;margin:-10px;}"
+	".col{flex:1;padding:10px;min-width:200px;}"
+	".card{background:white;border-radius:8px;padding:20px;box-shadow:0 2px 4px rgba(0,0,0,0.1);margin-bottom:20px;}"
+	"button{background:#007bff;color:white;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;font-size:14px;}"
+	"button:hover{background:#0056b3;}"
+	"input{padding:8px;border:1px solid #ddd;border-radius:4px;width:100%;box-sizing:border-box;}"
+	"</style></head><body><div id='app'>";
+
+static const char* WCE_HTML_FOOTER =
+	"</div>"
+	"<script>"
+	"function trigger(evt){fetch('/api/trigger?event='+evt,{method:'POST'});}"
+	"async function sync(){"
+	"  try{const r=await fetch('/api/data');const d=await r.json();"
+	"  document.querySelectorAll('[wce-bind]').forEach(el=>{"
+	"    const k=el.getAttribute('wce-bind');"
+	"    if(d[k]!==undefined) el.textContent=d[k];"
+	"  });"
+	"  }catch(e){}"
+	"}"
+	"setInterval(sync, 500); sync();"
+	"</script></body></html>";
 
 // --- Helper Functions ---
+static void str_append(char** buf, size_t* cap, size_t* len, const char* str) {
+    size_t l = strlen(str);
+    if (*len + l >= *cap) {
+        *cap = (*cap + l) * 2 + 4096;
+        *buf = (char*)realloc(*buf, *cap);
+    }
+    strcpy(*buf + *len, str);
+    *len += l;
+}
+
+static void wce_render_node_recursive(WceNode* node, char** buf, size_t* cap, size_t* len) {
+    if (!node) return;
+
+    // Open tag
+    switch (node->type) {
+        case WCE_NODE_ROOT: break;
+        case WCE_NODE_CONTAINER: str_append(buf, cap, len, "<div class='container'>"); break;
+        case WCE_NODE_ROW:       str_append(buf, cap, len, "<div class='row'>"); break;
+        case WCE_NODE_COL:       str_append(buf, cap, len, "<div class='col'>"); break;
+        case WCE_NODE_CARD:      str_append(buf, cap, len, "<div class='card'>"); break;
+        case WCE_NODE_PANEL:     str_append(buf, cap, len, "<div class='panel'>"); break;
+        case WCE_NODE_TEXT:
+            str_append(buf, cap, len, "<span");
+            if (node->value_ref) {
+                 str_append(buf, cap, len, " wce-bind='");
+                 str_append(buf, cap, len, node->value_ref);
+                 str_append(buf, cap, len, "'");
+            }
+            str_append(buf, cap, len, ">");
+            if (node->label) str_append(buf, cap, len, node->label);
+            str_append(buf, cap, len, "</span>");
+            break;
+        case WCE_NODE_BUTTON:
+            str_append(buf, cap, len, "<button");
+            if (node->event_handler) {
+                str_append(buf, cap, len, " onclick=\"trigger('");
+                str_append(buf, cap, len, node->event_handler);
+                str_append(buf, cap, len, "')\"");
+            }
+            str_append(buf, cap, len, ">");
+            if (node->label) str_append(buf, cap, len, node->label);
+            str_append(buf, cap, len, "</button>");
+            break;
+        default: break;
+    }
+
+    // Children
+    WceNode* child = node->first_child;
+    while (child) {
+        wce_render_node_recursive(child, buf, cap, len);
+        child = child->next_sibling;
+    }
+
+    // Close tag
+    switch (node->type) {
+        case WCE_NODE_CONTAINER:
+        case WCE_NODE_ROW:
+        case WCE_NODE_COL:
+        case WCE_NODE_CARD:
+        case WCE_NODE_PANEL:
+            str_append(buf, cap, len, "</div>"); break;
+        default: break;
+    }
+}
+
+char* wce_render_dom() {
+    size_t cap = 8192;
+    size_t len = 0;
+    char* buf = (char*)malloc(cap);
+    buf[0] = '\0';
+    
+    str_append(&buf, &cap, &len, WCE_HTML_HEADER);
+    
+    if (_wce_root) {
+        wce_render_node_recursive(_wce_root, &buf, &cap, &len);
+    } else {
+        str_append(&buf, &cap, &len, "<div class='container'><div class='card'><h3>No UI Defined</h3><p>Use wce_ui_begin() ... wce_ui_end() in main.c</p></div></div>");
+    }
+    
+    str_append(&buf, &cap, &len, WCE_HTML_FOOTER);
+    return buf;
+}
 
 // --- Runtime UI Construction Implementation ---
 static WceNode* _wce_root = NULL;
@@ -234,11 +332,35 @@ void _wce_add_child(WceNode* parent, WceNode* child) {
 
 void _wce_node_set_prop(WceNode* node, const char* label, const char* val_ref, const char* evt) {
     if (label) {
-        #ifdef _WIN32
-        node->label = _strdup(label);
-        #else
-        node->label = strdup(label);
-        #endif
+        // Auto-detect binding syntax {{ key }}
+        if (strncmp(label, "{{", 2) == 0 && strstr(label, "}}")) {
+            char* start = strstr(label, "{{") + 2;
+            char* end = strstr(label, "}}");
+            size_t len = end - start;
+            char* key = (char*)malloc(len + 1);
+            strncpy(key, start, len);
+            key[len] = '\0';
+            
+            // Trim spaces
+            char* k = key;
+            while(*k == ' ') k++;
+            char* k_end = k + strlen(k) - 1;
+            while(k_end > k && *k_end == ' ') *k_end-- = '\0';
+
+            #ifdef _WIN32
+            node->value_ref = _strdup(k);
+            #else
+            node->value_ref = strdup(k);
+            #endif
+            free(key);
+            node->label = NULL; // Clear label as it is bound
+        } else {
+            #ifdef _WIN32
+            node->label = _strdup(label);
+            #else
+            node->label = strdup(label);
+            #endif
+        }
     }
     if (val_ref) {
         #ifdef _WIN32
@@ -421,7 +543,9 @@ void process_request(int client_idx) {
 
 	// Embedded fallback for include-only usage
 	if (strcmp(path, "/") == 0 || strcmp(path, "/index.html") == 0) {
-		send_response(c->fd, "200 OK", "text/html", WCE_EMBEDDED_INDEX_HTML, strlen(WCE_EMBEDDED_INDEX_HTML));
+		char* html = wce_render_dom();
+		send_response(c->fd, "200 OK", "text/html", html, strlen(html));
+		free(html);
 		return;
 	}
 
