@@ -1,83 +1,105 @@
 wce_container() {
+    // Global Container Style
+    wce_css("font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 900px; margin: 0 auto; padding: 20px;");
+
+    // --- Header Section ---
     wce_card() {
-        wce_text("WebCee Framework Showcase") {
-            wce_css("font-size: 28px; font-weight: bold; margin-bottom: 10px; color: #2c3e50;");
+        wce_css("background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); margin-bottom: 30px;");
+        
+        wce_text("WebCee Dashboard") {
+            wce_css("font-size: 32px; font-weight: 700; margin-bottom: 10px; display: block;");
         }
-        wce_text("A pure C web framework with reactive UI binding.") {
-            wce_css("color: #7f8c8d; margin-bottom: 20px;");
+        wce_text("High-Performance Embedded C Web Framework") {
+            wce_css("font-size: 16px; opacity: 0.9; font-weight: 300; display: block;");
         }
     }
 
+    // --- Metrics Row ---
     wce_row() {
+        // Metric 1: CPU
         wce_col() {
             wce_card() {
-                wce_text("Interactivity Demo") {
-                    wce_css("font-size: 18px; font-weight: bold; margin-bottom: 15px;");
+                wce_css("background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center; transition: transform 0.2s;");
+                wce_text("CPU Load") { wce_css("color: #7f8c8d; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 5px;"); }
+                wce_text("0%") {
+                    wce_bind("cpu_val");
+                    wce_css("font-size: 36px; font-weight: 700; color: #e74c3c; display: block;");
+                }
+            }
+        }
+        // Metric 2: Memory
+        wce_col() {
+            wce_card() {
+                wce_css("background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center;");
+                wce_text("Memory Usage") { wce_css("color: #7f8c8d; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 5px;"); }
+                wce_text("0 MB") {
+                    wce_bind("mem_val");
+                    wce_css("font-size: 36px; font-weight: 700; color: #3498db; display: block;");
+                }
+            }
+        }
+        // Metric 3: Requests/Counter
+        wce_col() {
+            wce_card() {
+                wce_css("background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center;");
+                wce_text("Total Requests") { wce_css("color: #7f8c8d; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 5px;"); }
+                wce_text("0") {
+                    wce_bind("counter_val");
+                    wce_css("font-size: 36px; font-weight: 700; color: #2ecc71; display: block;");
+                }
+            }
+        }
+    }
+
+    // --- Main Content Area ---
+    wce_row() {
+        // Left Column: Controls
+        wce_col() {
+            wce_card() {
+                wce_css("background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); height: 100%;");
+                wce_text("Control Panel") {
+                    wce_css("font-size: 20px; font-weight: 600; color: #2c3e50; margin-bottom: 20px; display: block; border-bottom: 2px solid #f0f2f5; padding-bottom: 10px;");
                 }
                 
-                wce_row() {
-                    wce_text("Counter: ");
-                    wce_text("0") {
-                        wce_bind("counter_val");
-                        wce_css("font-weight: bold; color: #e74c3c;");
-                    }
-                }
+                wce_text("Simulate Traffic:") { wce_css("display: block; margin-bottom: 10px; color: #666;"); }
                 
                 wce_row() {
-                    wce_button("Increment") {
+                    wce_button("Generate Request") {
                         wce_on_click("on_inc");
+                        wce_css("background-color: #3498db; color: white; padding: 12px 20px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; width: 100%; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(52, 152, 219, 0.3);");
                     }
-                    wce_button("Reset") {
+                }
+                wce_row() {
+                    wce_button("Reset System") {
                         wce_on_click("on_reset");
-                        wce_css("background: #95a5a6; margin-left: 10px;");
+                        wce_css("background-color: #ecf0f1; color: #7f8c8d; padding: 12px 20px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; width: 100%; transition: background 0.2s;");
                     }
                 }
             }
         }
 
+        // Right Column: Data Binding
         wce_col() {
             wce_card() {
-                wce_text("Data Binding Demo") {
-                    wce_css("font-size: 18px; font-weight: bold; margin-bottom: 15px;");
+                wce_css("background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); height: 100%;");
+                wce_text("Live Data Binding") {
+                    wce_css("font-size: 20px; font-weight: 600; color: #2c3e50; margin-bottom: 20px; display: block; border-bottom: 2px solid #f0f2f5; padding-bottom: 10px;");
                 }
                 
-                wce_text("Type something below:");
-                wce_input("Enter text...") {
+                wce_text("Server Message:") { wce_css("display: block; margin-bottom: 8px; font-weight: 500; color: #34495e;"); }
+                
+                wce_input("Type to update server...") {
                     wce_bind("user_input");
+                    wce_css("width: 100%; padding: 12px; border: 2px solid #e0e6ed; border-radius: 6px; font-size: 16px; color: #2c3e50; outline: none; transition: border-color 0.2s; margin-bottom: 20px;");
                 }
                 
-                wce_row() {
-                    wce_text("You typed: ");
+                wce_panel() {
+                    wce_css("background: #f8f9fa; padding: 15px; border-radius: 6px; border-left: 4px solid #2ecc71;");
+                    wce_text("Echo: ") { wce_css("font-weight: bold; color: #27ae60;"); }
                     wce_text("") {
                         wce_bind("user_input");
-                        wce_css("color: #2980b9; font-style: italic;");
+                        wce_css("color: #2c3e50;");
                     }
-                }
-            }
-        }
-    }
-
-    wce_card() {
-        wce_text("Layout System") {
-            wce_css("font-size: 18px; font-weight: bold; margin-bottom: 15px;");
-        }
-        wce_row() {
-            wce_col() {
-                wce_panel() {
-                    wce_text("Column 1");
-                    wce_css("background: #ecf0f1; padding: 10px; border-radius: 4px;");
-                }
-            }
-            wce_col() {
-                wce_panel() {
-                    wce_text("Column 2");
-                    wce_css("background: #bdc3c7; padding: 10px; border-radius: 4px;");
-                }
-            }
-            wce_col() {
-                wce_panel() {
-                    wce_text("Column 3");
-                    wce_css("background: #95a5a6; padding: 10px; border-radius: 4px; color: white;");
                 }
             }
         }

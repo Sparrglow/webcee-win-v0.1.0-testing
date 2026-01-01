@@ -41,16 +41,21 @@ copy /Y "%SRC_ROOT%include\*.h" "%TARGET_DIR%\lib\" >nul
 (
 echo wce_container^(^) {
 echo     wce_card^(^) {
-echo         wce_text^("Welcome to WebCee"^) {
-echo             wce_css^("font-size: 24px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;"^);
+echo         wce_css^("text-align: center; padding: 40px;"^);
+echo         wce_row^(^) {
+echo             wce_text^("Welcome to WebCee"^) {
+echo                 wce_css^("display: block; font-size: 32px; font-weight: bold; color: #2c3e50; margin-bottom: 15px;"^);
+echo             }
 echo         }
-echo         wce_text^("The lightweight C Web Framework"^) {
-echo             wce_css^("color: #7f8c8d; margin-bottom: 20px;"^);
+echo         wce_row^(^) {
+echo             wce_text^("The lightweight C Web Framework"^) {
+echo                 wce_css^("display: block; font-size: 18px; color: #7f8c8d; margin-bottom: 30px;"^);
+echo             }
 echo         }
 echo         wce_row^(^) {
 echo             wce_button^("Get Started"^) {
 echo                 wce_on_click^("on_start"^);
-echo                 wce_css^("background-color: #3498db; color: white; padding: 10px 20px; border-radius: 4px; border: none;"^);
+echo                 wce_css^("background-color: #3498db; color: white; padding: 12px 24px; font-size: 16px; border-radius: 6px; border: none; cursor: pointer; transition: background 0.3s;"^);
 echo             }
 echo         }
 echo     }
