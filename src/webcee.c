@@ -172,6 +172,11 @@ typedef struct {
 static wce_kv_t kv_store[MAX_KV_STORE];
 static int kv_count = 0;
 
+// --- Runtime UI Construction Implementation ---
+static WceNode* _wce_root = NULL;
+static WceNode* _wce_ctx_stack[32];
+static int _wce_ctx_top = -1;
+
 // Minimal embedded UI (served when no web_root found)
 // Modified to support Runtime Rendering (SSR from C structure)
 static const char* WCE_HTML_HEADER =
@@ -287,11 +292,6 @@ char* wce_render_dom() {
     str_append(&buf, &cap, &len, WCE_HTML_FOOTER);
     return buf;
 }
-
-// --- Runtime UI Construction Implementation ---
-static WceNode* _wce_root = NULL;
-static WceNode* _wce_ctx_stack[32];
-static int _wce_ctx_top = -1;
 
 WceNode* _wce_node_create(WceNodeType type) {
     WceNode* n = (WceNode*)malloc(sizeof(WceNode));
