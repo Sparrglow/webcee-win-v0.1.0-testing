@@ -45,6 +45,7 @@ struct WceNode {
     struct WceNode* next_sibling;
     struct WceNode* parent;
     int col_span;
+    char* style; // Added for CSS styling
     // ... 其他属性
 };
 
@@ -52,6 +53,10 @@ struct WceNode {
 extern WceNode* _wce_node_create(WceNodeType type);
 extern void _wce_add_child(WceNode* parent, WceNode* child);
 extern void _wce_node_set_prop(WceNode* node, const char* label, const char* val_ref, const char* evt);
+extern void _wce_add_style(const char* style);
+
+// Style macro
+#define wce_css(style) _wce_add_style(style)
 
 // --- 核心宏定义 (GNU C Extension for Statement Expressions) ---
 

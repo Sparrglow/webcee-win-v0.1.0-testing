@@ -176,6 +176,7 @@ static int kv_count = 0;
 static WceNode* _wce_root = NULL;
 static WceNode* _wce_ctx_stack[32];
 static int _wce_ctx_top = -1;
+static WceNode* _wce_last_created = NULL; // Track last created node for styling
 
 // Minimal embedded UI (served when no web_root found)
 // Modified to support Runtime Rendering (SSR from C structure)
@@ -223,16 +224,26 @@ static void str_append(char** buf, size_t* cap, size_t* len, const char* str) {
 static void wce_render_node_recursive(WceNode* node, char** buf, size_t* cap, size_t* len) {
     if (!node) return;
 
+    // Helper to inject style
+    void inject_style() {
+        if (node->style) {
+            str_append(buf, cap, len, " style='");
+            str_append(buf, cap, len, node->style);
+            str_append(buf, cap, len, "'");
+        }
+    }
+
     // Open tag
     switch (node->type) {
         case WCE_NODE_ROOT: break;
-        case WCE_NODE_CONTAINER: str_append(buf, cap, len, "<div class='container'>"); break;
-        case WCE_NODE_ROW:       str_append(buf, cap, len, "<div class='row'>"); break;
-        case WCE_NODE_COL:       str_append(buf, cap, len, "<div class='col'>"); break;
-        case WCE_NODE_CARD:      str_append(buf, cap, len, "<div class='card'>"); break;
-        case WCE_NODE_PANEL:     str_append(buf, cap, len, "<div class='panel'>"); break;
+        case WCE_NODE_CONTAINER: str_append(buf, cap, len, "<div class='container'"); inject_style(); str_append(buf, cap, len, ">"); break;
+        case WCE_NODE_ROW:       str_append(buf, cap, len, "<div class='row'"); inject_style(); str_append(buf, cap, len, ">"); break;
+        case WCE_NODE_COL:       str_append(buf, cap, len, "<div class='col'"); inject_style(); str_append(buf, cap, len, ">"); break;
+        case WCE_NODE_CARD:      str_append(buf, cap, len, "<div class='card'"); inject_style(); str_append(buf, cap, len, ">"); break;
+        case WCE_NODE_PANEL:     str_append(buf, cap, len, "<div class='panel'"); inject_style(); str_append(buf, cap, len, ">"); break;
         case WCE_NODE_TEXT:
             str_append(buf, cap, len, "<span");
+            inject_style();
             if (node->value_ref) {
                  str_append(buf, cap, len, " wce-bind='");
                  str_append(buf, cap, len, node->value_ref);
@@ -244,6 +255,7 @@ static void wce_render_node_recursive(WceNode* node, char** buf, size_t* cap, si
             break;
         case WCE_NODE_BUTTON:
             str_append(buf, cap, len, "<button");
+            inject_style();
             if (node->event_handler) {
                 str_append(buf, cap, len, " onclick=\"trigger('");
                 str_append(buf, cap, len, node->event_handler);
@@ -297,7 +309,18 @@ WceNode* _wce_node_create(WceNodeType type) {
     WceNode* n = (WceNode*)malloc(sizeof(WceNode));
     memset(n, 0, sizeof(WceNode));
     n->type = type;
+    _wce_last_created = n;
     return n;
+}
+
+void _wce_add_style(const char* style) {
+    if (_wce_last_created && style) {
+        #ifdef _WIN32
+        _wce_last_created->style = _strdup(style);
+        #else
+        _wce_last_created->style = strdup(style);
+        #endif
+    }
 }
 
 void _wce_push_context(WceNode* node) {
