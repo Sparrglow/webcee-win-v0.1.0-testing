@@ -40,8 +40,20 @@ copy /Y "%SRC_ROOT%include\*.h" "%TARGET_DIR%\lib\" >nul
 :: 5. 生成 ui.wce
 (
 echo wce_container^(^) {
-echo     wce_text^("Hello WebCee!"^);
-echo     wce_button^("Click Me"^);
+echo     wce_card^(^) {
+echo         wce_text^("Welcome to WebCee"^) {
+echo             wce_css^("font-size: 24px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;"^);
+echo         }
+echo         wce_text^("The lightweight C Web Framework"^) {
+echo             wce_css^("color: #7f8c8d; margin-bottom: 20px;"^);
+echo         }
+echo         wce_row^(^) {
+echo             wce_button^("Get Started"^) {
+echo                 wce_on_click^("on_start"^);
+echo                 wce_css^("background-color: #3498db; color: white; padding: 10px 20px; border-radius: 4px; border: none;"^);
+echo             }
+echo         }
+echo     }
 echo }
 ) > "%TARGET_DIR%\ui.wce"
 
@@ -55,16 +67,24 @@ echo #define SERVER_PORT 8080
 echo.
 echo extern void wce_ui_main^(void^);
 echo.
+echo void on_start^(^) {
+echo     printf^("Welcome button clicked!\n"^);
+echo }
+echo.
 echo int main^(^) {
 echo     // Initialize WebCee server
 echo     if ^(wce_init^(SERVER_PORT^) != 0^) return 1;
+echo.
+echo     wce_register_function^("on_start", on_start^);
 echo.
 echo     wce_ui_main^(^);
 echo.
 echo     if ^(wce_start^(^) != 0^) return 1;
 echo.
 echo     printf^("Server running at http://localhost:%%d\n", SERVER_PORT^);
-echo     while^(1^) { wce_sleep^(1000^); }
+echo     printf^("Press Enter to stop server...\n"^);
+echo     getchar^(^);
+echo     wce_stop^(^);
 echo     return 0;
 echo }
 ) > "%TARGET_DIR%\main.c"

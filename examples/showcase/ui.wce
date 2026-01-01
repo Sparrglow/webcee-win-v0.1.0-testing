@@ -1,84 +1,84 @@
 wce_container() {
-    wce_css("max-width: 900px; margin: 0 auto; padding: 20px; font-family: sans-serif;");
-    
-    wce_row() {
-        wce_col() {
-            wce_card() {
-                wce_text("WebCee Control Panel") {
-                    wce_css("font-size: 24px; font-weight: bold; color: #333; display: block; margin-bottom: 10px;");
-                }
-                wce_text("Status: ") { wce_css("font-weight: bold;"); }
-                wce_text("Online") { 
-                    wce_bind("status_text"); 
-                    wce_css("color: green;"); 
-                }
-            }
+    wce_card() {
+        wce_text("WebCee Framework Showcase") {
+            wce_css("font-size: 28px; font-weight: bold; margin-bottom: 10px; color: #2c3e50;");
+        }
+        wce_text("A pure C web framework with reactive UI binding.") {
+            wce_css("color: #7f8c8d; margin-bottom: 20px;");
         }
     }
 
     wce_row() {
         wce_col() {
             wce_card() {
-                wce_text("User Settings") { wce_css("font-size: 18px; margin-bottom: 15px; display: block;"); }
+                wce_text("Interactivity Demo") {
+                    wce_css("font-size: 18px; font-weight: bold; margin-bottom: 15px;");
+                }
                 
                 wce_row() {
-                    wce_col() {
-                        wce_text("Username:");
-                        wce_input("Enter username") {
-                            wce_bind("username");
-                            wce_css("margin-top: 5px;");
-                        }
-                    }
-                    wce_col() {
-                        wce_text("Email:");
-                        wce_input("Enter email") {
-                            wce_bind("email");
-                            wce_css("margin-top: 5px;");
-                        }
+                    wce_text("Counter: ");
+                    wce_text("0") {
+                        wce_bind("counter_val");
+                        wce_css("font-weight: bold; color: #e74c3c;");
                     }
                 }
                 
                 wce_row() {
-                    wce_css("margin-top: 20px;");
-                    wce_button("Save Changes") {
-                        wce_on_click("on_save");
-                        wce_css("background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;");
+                    wce_button("Increment") {
+                        wce_on_click("on_inc");
                     }
                     wce_button("Reset") {
                         wce_on_click("on_reset");
-                        wce_css("background-color: #6c757d; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin-left: 10px;");
+                        wce_css("background: #95a5a6; margin-left: 10px;");
                     }
                 }
             }
         }
-        
+
         wce_col() {
             wce_card() {
-                wce_text("System Metrics") { wce_css("font-size: 18px; margin-bottom: 15px; display: block;"); }
-                
-                wce_row() {
-                    wce_text("CPU Usage: ");
-                    wce_text("0%") { wce_bind("cpu_usage"); wce_css("font-weight: bold;"); }
+                wce_text("Data Binding Demo") {
+                    wce_css("font-size: 18px; font-weight: bold; margin-bottom: 15px;");
                 }
-                wce_row() {
-                    wce_text("Memory: ");
-                    wce_text("0MB") { wce_bind("mem_usage"); wce_css("font-weight: bold;"); }
+                
+                wce_text("Type something below:");
+                wce_input("Enter text...") {
+                    wce_bind("user_input");
                 }
                 
                 wce_row() {
-                    wce_css("margin-top: 20px;");
-                    wce_button("Refresh Metrics") {
-                        wce_on_click("on_refresh");
+                    wce_text("You typed: ");
+                    wce_text("") {
+                        wce_bind("user_input");
+                        wce_css("color: #2980b9; font-style: italic;");
                     }
                 }
             }
         }
     }
-    
-    wce_row() {
-        wce_col() {
-            wce_text("Powered by WebCee C Compiler") {
-                wce_css("text-align: center; color: #888; font-size: 12px; margin-top: 20px; display: block;");
+
+    wce_card() {
+        wce_text("Layout System") {
+            wce_css("font-size: 18px; font-weight: bold; margin-bottom: 15px;");
+        }
+        wce_row() {
+            wce_col() {
+                wce_panel() {
+                    wce_text("Column 1");
+                    wce_css("background: #ecf0f1; padding: 10px; border-radius: 4px;");
+                }
+            }
+            wce_col() {
+                wce_panel() {
+                    wce_text("Column 2");
+                    wce_css("background: #bdc3c7; padding: 10px; border-radius: 4px;");
+                }
+            }
+            wce_col() {
+                wce_panel() {
+                    wce_text("Column 3");
+                    wce_css("background: #95a5a6; padding: 10px; border-radius: 4px; color: white;");
+                }
             }
         }
     }
