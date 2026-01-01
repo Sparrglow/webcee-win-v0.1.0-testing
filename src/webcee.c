@@ -26,8 +26,9 @@
 	#define WCE_INVALID_SOCKET INVALID_SOCKET
 	#define WCE_SOCKET_ERROR SOCKET_ERROR
 	#define wce_close_socket closesocket
-	#define wce_sleep(ms) Sleep(ms)
 	#define WCE_EAGAIN WSAEWOULDBLOCK
+
+    void wce_sleep(int ms) { Sleep(ms); }
 
 	int wce_set_nonblocking(wce_socket_t fd) {
 		u_long mode = 1;
@@ -50,8 +51,9 @@
 	#define WCE_INVALID_SOCKET -1
 	#define WCE_SOCKET_ERROR -1
 	#define wce_close_socket close
-	#define wce_sleep(ms) usleep((ms) * 1000)
 	#define WCE_EAGAIN EAGAIN
+
+    void wce_sleep(int ms) { usleep((ms) * 1000); }
 
 	int wce_set_nonblocking(wce_socket_t fd) {
 		int flags = fcntl(fd, F_GETFL, 0);
@@ -198,16 +200,22 @@ static const char* WCE_HTML_HEADER =
 static const char* WCE_HTML_FOOTER =
 	"</div>"
 	"<script>"
-	"function trigger(evt){fetch('/api/trigger?event='+evt,{method:'POST'});}"
+	"async function trigger(evt){"
+    "  await fetch('/api/trigger?event='+evt,{method:'POST'});"
+    "  sync();" // Immediate sync after trigger
+    "}"
 	"async function sync(){"
 	"  try{const r=await fetch('/api/data');const d=await r.json();"
 	"  document.querySelectorAll('[wce-bind]').forEach(el=>{"
 	"    const k=el.getAttribute('wce-bind');"
-	"    if(d[k]!==undefined) el.textContent=d[k];"
+	"    if(d[k]!==undefined) {"
+    "      if(el.tagName==='INPUT') el.value=d[k];"
+    "      else el.textContent=d[k];"
+    "    }"
 	"  });"
 	"  }catch(e){}"
 	"}"
-	"setInterval(sync, 500); sync();"
+	"setInterval(sync, 100); sync();" // Faster polling (100ms)
 	"</script></body></html>";
 
 // --- Helper Functions ---
@@ -264,6 +272,30 @@ static void wce_render_node_recursive(WceNode* node, char** buf, size_t* cap, si
             str_append(buf, cap, len, ">");
             if (node->label) str_append(buf, cap, len, node->label);
             str_append(buf, cap, len, "</button>");
+            break;
+        case WCE_NODE_INPUT:
+            str_append(buf, cap, len, "<input type='text'");
+            inject_style();
+            if (node->label) {
+                str_append(buf, cap, len, " placeholder='");
+                str_append(buf, cap, len, node->label);
+                str_append(buf, cap, len, "'");
+            }
+            if (node->value_ref) {
+                 // For input, we need two-way binding or at least value setting
+                 // Simple value setting for now
+                 str_append(buf, cap, len, " wce-bind='");
+                 str_append(buf, cap, len, node->value_ref);
+                 str_append(buf, cap, len, "'");
+                 // Also add onchange to update model? 
+                 // The current JS only does one-way from server to client via polling.
+                 // Client to server is via /api/update?key=...&val=...
+                 // Let's add a simple onchange handler
+                 str_append(buf, cap, len, " onchange=\"fetch('/api/update?key=");
+                 str_append(buf, cap, len, node->value_ref);
+                 str_append(buf, cap, len, "&val='+this.value)\"");
+            }
+            str_append(buf, cap, len, "/>");
             break;
         default: break;
     }
@@ -483,7 +515,13 @@ void process_request(int client_idx) {
 				char* val = val_param + 4;
 				char* end_val = strchr(val, '&');
 				if (end_val) *end_val = '\0';
+				
+				// Update KV store directly
+				wce_data_set(key, val);
+				
+				// Also call hook if needed (optional)
 				wce_handle_model_update(key, val);
+				
 				send_response(c->fd, "200 OK", "text/plain", "OK", 2);
 				return;
 			}
@@ -748,6 +786,16 @@ void wce_data_set(const char* key, const char* val) {
 		kv_store[kv_count].value = strdup(val);
 	#endif
 	kv_count++;
+}
+
+const char* wce_data_get(const char* key) {
+	if (!key) return NULL;
+	for (int i = 0; i < kv_count; i++) {
+		if (strcmp(kv_store[i].key, key) == 0) {
+			return kv_store[i].value;
+		}
+	}
+	return NULL;
 }
 
 const char* wce_version(void) {

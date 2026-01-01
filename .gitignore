@@ -19,12 +19,9 @@ build_c/
 generated/
 dist/
 
-# Local scratch / experiments
-scratch/
-
-# Python
-__pycache__/
-*.pyc
+# Generated Source
+*_gen.c
+*_gen.h
 
 # IDEs
 .vscode/

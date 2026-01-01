@@ -1,4 +1,3 @@
-// webcee_build.h - 构建期UI定义API（用户编写.wce时包含此文件）
 #ifndef WEBCEE_BUILD_H
 #define WEBCEE_BUILD_H
 
@@ -6,15 +5,9 @@
 extern "C" {
 #endif
 
-// --- 上下文管理（内部使用） ---
-typedef struct WceNode WceNode; // Forward declaration
+#include <stddef.h>
 
-// 上下文管理
-extern WceNode* _wce_current_context(void);
-extern void _wce_push_context(WceNode* ctx);
-extern void _wce_pop_context(void);
-
-// 节点类型定义
+// --- Node Types ---
 typedef enum {
     WCE_NODE_ROOT,
     WCE_NODE_CONTAINER,
@@ -29,13 +22,8 @@ typedef enum {
     WCE_NODE_INPUT
 } WceNodeType;
 
-// 兼容别名：允许使用 WCE_NODE_COLUMN
-#ifndef WCE_NODE_COLUMN
-#define WCE_NODE_COLUMN WCE_NODE_COL
-#endif
-
-// 节点结构
-struct WceNode {
+// --- Node Structure ---
+typedef struct WceNode {
     WceNodeType type;
     char* label;
     char* value_ref;
@@ -45,123 +33,115 @@ struct WceNode {
     struct WceNode* next_sibling;
     struct WceNode* parent;
     int col_span;
-    char* style; // Added for CSS styling
-    // ... 其他属性
-};
+    char* style;
+} WceNode;
 
-// 节点创建与操作
+// --- Context Management ---
+extern WceNode* _wce_current_context(void);
+extern void _wce_push_context(WceNode* ctx);
+extern void _wce_pop_context(void);
 extern WceNode* _wce_node_create(WceNodeType type);
 extern void _wce_add_child(WceNode* parent, WceNode* child);
-extern void _wce_node_set_prop(WceNode* node, const char* label, const char* val_ref, const char* evt);
-extern void _wce_add_style(const char* style);
 
-// Style macro
-#define wce_css(style) _wce_add_style(style)
+// --- Helper Functions ---
 
-// --- 核心宏定义 (GNU C Extension for Statement Expressions) ---
+static inline void _wce_begin_container(WceNodeType type) {
+    WceNode* node = _wce_node_create(type);
+    WceNode* parent = _wce_current_context();
+    if (parent) {
+        _wce_add_child(parent, node);
+    }
+    _wce_push_context(node);
+}
 
-#if defined(__GNUC__) || defined(__clang__)
-    #define _WCE_CONTAINER(type, ...) \
-        __extension__({ \
-            WceNode *_node = _wce_node_create(type); \
-            _wce_add_child(_wce_current_context(), _node); \
-            _wce_push_context(_node); \
-            do { __VA_ARGS__; } while(0); \
-            _wce_pop_context(); \
-            _node; \
-        })
-#else
-    // Fallback for MSVC or standard C (using do-while(0), returns void effectively)
-    // Note: This might not work if the macro is used as an expression, but works for statements.
-    #define _WCE_CONTAINER(type, ...) \
-        do { \
-            WceNode *_node = _wce_node_create(type); \
-            _wce_add_child(_wce_current_context(), _node); \
-            _wce_push_context(_node); \
-            do { __VA_ARGS__; } while(0); \
-            _wce_pop_context(); \
-        } while(0)
-#endif
+static inline void _wce_end_container(void) {
+    _wce_pop_context();
+}
 
-// --- 容器组件 API ---
-#define wce_row(...)          _WCE_CONTAINER(WCE_NODE_ROW, __VA_ARGS__)
-#define wce_col(...)          _WCE_CONTAINER(WCE_NODE_COL, __VA_ARGS__)
-#define wce_column(...)       wce_col(__VA_ARGS__)
-#define wce_card(...)         _WCE_CONTAINER(WCE_NODE_CARD, __VA_ARGS__)
-#define wce_panel(...)        _WCE_CONTAINER(WCE_NODE_PANEL, __VA_ARGS__)
-#define wce_container(...)    _WCE_CONTAINER(WCE_NODE_CONTAINER, __VA_ARGS__)
+// --- Container Macros ---
+#define wce_container_begin() _wce_begin_container(WCE_NODE_CONTAINER)
+#define wce_container_end()   _wce_end_container()
 
-// --- 叶子组件 API ---
+#define wce_row_begin() _wce_begin_container(WCE_NODE_ROW)
+#define wce_row_end()   _wce_end_container()
 
-// Helper macros for leaf nodes
-#define _WCE_LEAF_TEXT(fmt, ...) \
-    do { \
-        WceNode* _n = _wce_node_create(WCE_NODE_TEXT); \
-        /* 当前实现：仅存储原始字符串 fmt（忽略可变参数格式化） */ \
-        _wce_node_set_prop(_n, (fmt), NULL, NULL); \
-        _wce_add_child(_wce_current_context(), _n); \
-    } while(0)
+#define wce_col_begin() _wce_begin_container(WCE_NODE_COL)
+#define wce_col_end()   _wce_end_container()
 
-#define _WCE_LEAF_BUTTON(label, cb) \
-    do { \
-        WceNode* _n = _wce_node_create(WCE_NODE_BUTTON); \
-        _wce_node_set_prop(_n, (label), NULL, #cb); \
-        _wce_add_child(_wce_current_context(), _n); \
-    } while(0)
+#define wce_card_begin() _wce_begin_container(WCE_NODE_CARD)
+#define wce_card_end()   _wce_end_container()
 
-#define _WCE_LEAF_SLIDER(label, var_ptr, min, max) \
-    do { \
-        WceNode* _n = _wce_node_create(WCE_NODE_SLIDER); \
-        (void)(min); (void)(max); \
-        _wce_node_set_prop(_n, (label), #var_ptr, NULL); \
-        _wce_add_child(_wce_current_context(), _n); \
-    } while(0)
+#define wce_panel_begin() _wce_begin_container(WCE_NODE_PANEL)
+#define wce_panel_end()   _wce_end_container()
 
-#define _WCE_LEAF_PROGRESS(label, var_ptr) \
-    do { \
-        WceNode* _n = _wce_node_create(WCE_NODE_PROGRESS); \
-        _wce_node_set_prop(_n, (label), #var_ptr, NULL); \
-        _wce_add_child(_wce_current_context(), _n); \
-    } while(0)
+// --- Leaf Node Macros (Block Support) ---
 
-#define _WCE_LEAF_INPUT(label, key) \
-    do { \
-        WceNode* _n = _wce_node_create(WCE_NODE_INPUT); \
-        _wce_node_set_prop(_n, (label), (key), NULL); \
-        _wce_add_child(_wce_current_context(), _n); \
-    } while(0)
+static inline void wce_text_begin(const char* text) {
+    WceNode* node = _wce_node_create(WCE_NODE_TEXT);
+    node->label = (char*)text;
+    WceNode* parent = _wce_current_context();
+    if (parent) _wce_add_child(parent, node);
+    _wce_push_context(node);
+}
+#define wce_text_end() _wce_pop_context()
 
-#define wce_text(fmt, ...)    _WCE_LEAF_TEXT(fmt, ##__VA_ARGS__)
-#define wce_button(label, cb) _WCE_LEAF_BUTTON(label, cb)
-#define wce_slider(label, var_ptr, min, max) _WCE_LEAF_SLIDER(label, var_ptr, min, max)
-#define wce_progress(label, var_ptr)         _WCE_LEAF_PROGRESS(label, var_ptr)
-#define wce_input(label, key)                _WCE_LEAF_INPUT(label, key)
+static inline void wce_button_begin(const char* label) {
+    WceNode* node = _wce_node_create(WCE_NODE_BUTTON);
+    node->label = (char*)label;
+    WceNode* parent = _wce_current_context();
+    if (parent) _wce_add_child(parent, node);
+    _wce_push_context(node);
+}
+#define wce_button_end() _wce_pop_context()
 
-// --- 运行时构建 API (Manual Mode) ---
-#define wce_ui_begin() \
-    do { \
-        WceNode* _root = _wce_node_create(WCE_NODE_ROOT); \
-        _wce_push_context(_root); \
-    } while(0)
+static inline void wce_input_begin(const char* placeholder) {
+    WceNode* node = _wce_node_create(WCE_NODE_INPUT);
+    node->label = (char*)placeholder;
+    WceNode* parent = _wce_current_context();
+    if (parent) _wce_add_child(parent, node);
+    _wce_push_context(node);
+}
+#define wce_input_end() _wce_pop_context()
 
-#define wce_ui_end() \
-    do { \
-        _wce_pop_context(); \
-    } while(0)
+// --- Leaf Node Functions (No Block) ---
 
-#define WCE_MODEL(key, val) wce_data_set(key, val)
-#define WCE_FUNC(name, func) wce_register_function(name, func)
+static inline void wce_text(const char* text) {
+    WceNode* node = _wce_node_create(WCE_NODE_TEXT);
+    node->label = (char*)text; 
+    WceNode* parent = _wce_current_context();
+    if (parent) _wce_add_child(parent, node);
+}
 
-// --- 兼容层：旧宏映射到新函数（保持向后兼容） ---
-// 注意：这里利用了宏展开的特性，将 BEGIN 展开为函数调用的前半部分
-#define WCE_ROW_BEGIN         wce_row({
-#define WCE_ROW_END           });
-#define WCE_COL_BEGIN         wce_col({
-#define WCE_COL_END           });
-#define WCE_CARD_BEGIN        wce_card({
-#define WCE_CARD_END          });
-#define WCE_CONTAINER_BEGIN   wce_container({
-#define WCE_CONTAINER_END     });
+static inline void wce_button(const char* label) {
+    WceNode* node = _wce_node_create(WCE_NODE_BUTTON);
+    node->label = (char*)label;
+    WceNode* parent = _wce_current_context();
+    if (parent) _wce_add_child(parent, node);
+}
+
+static inline void wce_input(const char* placeholder) {
+    WceNode* node = _wce_node_create(WCE_NODE_INPUT);
+    node->label = (char*)placeholder;
+    WceNode* parent = _wce_current_context();
+    if (parent) _wce_add_child(parent, node);
+}
+
+// --- Property Setters ---
+
+static inline void wce_css(const char* style) {
+    WceNode* node = _wce_current_context();
+    if (node) node->style = (char*)style;
+}
+
+static inline void wce_bind(const char* ref) {
+    WceNode* node = _wce_current_context();
+    if (node) node->value_ref = (char*)ref;
+}
+
+static inline void wce_on_click(const char* handler) {
+    WceNode* node = _wce_current_context();
+    if (node) node->event_handler = (char*)handler;
+}
 
 #ifdef __cplusplus
 }
