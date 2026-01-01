@@ -1,54 +1,41 @@
 @echo off
-setlocal
-set "SRC_ROOT=%~dp0"
-set "PROJ_NAME=%~1"
+:: 获取脚本所在目录（%~dp0 自动包含结尾的 \）
+set "SRC_DIR=%~dp0"
+:: 获取目标路径的绝对路径（%~f1 自动解析相对路径）
+set "TARGET_DIR=%~f1"
 
-if "%PROJ_NAME%"=="" (
-    echo Usage: create_project.bat <ProjectName>
+if "%~1"=="" (
+    echo Usage: create_project.bat [Path]
     exit /b 1
 )
 
-if exist "%PROJ_NAME%" (
-    echo Error: Directory %PROJ_NAME% already exists.
+echo [WebCee] Creating project at: "%TARGET_DIR%"
+
+:: 1. 检查源文件是否存在
+if not exist "%SRC_DIR%tools\wce.exe" (
+    echo Error: Compiler not found at "%SRC_DIR%tools\wce.exe"
+    echo Please run the build task first.
     exit /b 1
 )
 
-:: 1. Check and Build Compiler if missing
-if not exist "%SRC_ROOT%tools\wce.exe" (
-    echo [WebCee] Compiler tool not found. Building it now...
-    if not exist "%SRC_ROOT%tools" mkdir "%SRC_ROOT%tools"
-    gcc "%SRC_ROOT%compiler\core\*.c" "%SRC_ROOT%compiler\main.c" -o "%SRC_ROOT%tools\wce.exe" -std=c11 -Wall -Wno-unused-function
-    if errorlevel 1 (
-        echo [WebCee] Failed to build compiler. Cannot create project.
-        exit /b 1
-    )
-)
+:: 2. 创建目录结构
+if not exist "%TARGET_DIR%" mkdir "%TARGET_DIR%"
+if not exist "%TARGET_DIR%\tools" mkdir "%TARGET_DIR%\tools"
+if not exist "%TARGET_DIR%\lib" mkdir "%TARGET_DIR%\lib"
 
-echo [WebCee] Creating project %PROJ_NAME%...
-mkdir "%PROJ_NAME%"
-mkdir "%PROJ_NAME%\tools"
-mkdir "%PROJ_NAME%\lib"
+:: 3. 复制核心文件
+copy /Y "%SRC_DIR%tools\wce.exe" "%TARGET_DIR%\tools\" >nul
+copy /Y "%SRC_DIR%src\webcee.c" "%TARGET_DIR%\lib\" >nul
+copy /Y "%SRC_DIR%include\*.h" "%TARGET_DIR%\lib\" >nul
 
-:: 2. Copy Compiler
-copy "%SRC_ROOT%tools\wce.exe" "%PROJ_NAME%\tools\" >nul
-
-:: 3. Copy Library Files
-copy "%SRC_ROOT%src\webcee.c" "%PROJ_NAME%\lib\" >nul
-copy "%SRC_ROOT%include\*.h" "%PROJ_NAME%\lib\" >nul
-
-:: 4. Create ui.wce
+:: 4. 生成示例代码 ui.wce
 (
 echo wce_container^(^) {
-echo     wce_card^(^) {
-echo         wce_text^("Hello from %PROJ_NAME%!"^);
-echo         wce_row^(^) {
-echo             wce_button^("Click Me"^);
-echo         }
-echo     }
+echo     wce_text^("Hello WebCee!"^);
 echo }
-) > "%PROJ_NAME%\ui.wce"
+) > "%TARGET_DIR%\ui.wce"
 
-:: 5. Create main.c
+:: 5. 生成入口代码 main.c
 (
 echo #include "lib/webcee.h"
 echo #include ^<stdio.h^>
@@ -59,38 +46,16 @@ echo int main^(^) {
 echo     if ^(wce_init^(8080^) != 0^) return 1;
 echo     wce_ui_main^(^);
 echo     if ^(wce_start^(^) != 0^) return 1;
-echo     printf^("Server running at http://localhost:8080\n"^);
-echo     while^(1^) { wce_sleep^(1000^); }
 echo     return 0;
 echo }
-) > "%PROJ_NAME%\main.c"
+) > "%TARGET_DIR%\main.c"
 
-:: 6. Create build.bat
+:: 6. 生成构建脚本 build.bat
 (
 echo @echo off
-echo.
-echo echo [1/2] Compiling UI...
 echo tools\wce.exe ui.wce ui_gen.c
-echo if %%ERRORLEVEL%% NEQ 0 exit /b 1
-echo.
-echo echo [2/2] Compiling App...
 echo gcc main.c ui_gen.c lib\webcee.c -I lib -o app.exe -lws2_32
-echo if %%ERRORLEVEL%% NEQ 0 exit /b 1
-echo.
-echo echo Build success! Run app.exe to start.
-) > "%PROJ_NAME%\build.bat"
+echo if %%ERRORLEVEL%% EQU 0 echo Build success! Run app.exe
+) > "%TARGET_DIR%\build.bat"
 
-echo.
-echo Project created successfully!
-echo.
-echo Structure:
-echo   %PROJ_NAME%\
-echo   +-- tools\      (Compiler)
-echo   +-- lib\        (Runtime Library)
-echo   +-- ui.wce      (UI Definition)
-echo   +-- main.c      (Entry Point)
-echo   +-- build.bat   (Build Script)
-echo.
-echo To start:
-echo   cd %PROJ_NAME%
-echo   build.bat
+echo Project created successfully.
